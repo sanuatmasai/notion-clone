@@ -1,0 +1,72 @@
+{
+  "appName": "Clon de Notion",
+  "pages": {
+    "title": "Páginas",
+    "newPage": "Nueva Página",
+    "searchPlaceholder": "Buscar páginas...",
+    "noPagesFound": "No se encontraron páginas",
+    "untitled": "Sin título",
+    "gettingStarted": "Primeros pasos",
+    "projectPlan": "Plan del Proyecto",
+    "meetingNotes": "Notas de Reunión"
+  },
+  "sidebar": {
+    "home": "Inicio",
+    "templates": "Plantillas",
+    "settings": "Configuración",
+    "recentPages": "Páginas recientes",
+    "workspaces": "Espacios de trabajo",
+    "favorites": "Favoritos",
+    "private": "Privado",
+    "shared": "Compartido"
+  },
+  "settings": {
+    "title": "Configuración",
+    "account": "Cuenta",
+    "appearance": "Apariencia",
+    "notifications": "Notificaciones",
+    "language": "Idioma",
+    "signOut": "Cerrar sesión",
+    "yourProfile": "Tu perfil"
+  },
+  "languages": {
+    "en": "Inglés",
+    "es": "Español",
+    "fr": "Francés"
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "retry": "Reintentar"
+  },
+  "error": {
+    "title": "Algo salió mal",
+    "generic": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
+    "notFound": "Página no encontrada",
+    "unauthorized": "No tienes permiso para ver esta página"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "none": "No hay notificaciones nuevas"
+  },
+  "help": {
+    "title": "Ayuda y Soporte"
+  },
+  "user": {
+    "defaultName": "Usuario",
+    "signOut": "Cerrar sesión"
+  },
+  "table": {
+    "addRow": "Añadir fila",
+    "deleteRow": "Eliminar fila",
+    "addColumn": "Añadir columna",
+    "deleteColumn": "Eliminar columna",
+    "insertTable": "Insertar tabla"
+  },
+  "toolbar": {
+    "table": "Tabla",
+    "insertTable": "Insertar tabla"
+  }
+}

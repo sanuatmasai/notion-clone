@@ -1,0 +1,72 @@
+{
+  "appName": "Clone Notion",
+  "pages": {
+    "title": "Pages",
+    "newPage": "Nouvelle Page",
+    "searchPlaceholder": "Rechercher des pages...",
+    "noPagesFound": "Aucune page trouvée",
+    "untitled": "Sans titre",
+    "gettingStarted": "Pour commencer",
+    "projectPlan": "Plan du Projet",
+    "meetingNotes": "Notes de Réunion"
+  },
+  "sidebar": {
+    "home": "Accueil",
+    "templates": "Modèles",
+    "settings": "Paramètres",
+    "recentPages": "Pages récentes",
+    "workspaces": "Espaces de travail",
+    "favorites": "Favoris",
+    "private": "Privé",
+    "shared": "Partagé"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "account": "Compte",
+    "appearance": "Apparence",
+    "notifications": "Notifications",
+    "language": "Langue",
+    "signOut": "Déconnexion",
+    "yourProfile": "Votre Profil"
+  },
+  "languages": {
+    "en": "Anglais",
+    "es": "Espagnol",
+    "fr": "Français"
+  },
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "retry": "Réessayer"
+  },
+  "error": {
+    "title": "Quelque chose s'est mal passé",
+    "generic": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+    "notFound": "Page non trouvée",
+    "unauthorized": "Vous n'êtes pas autorisé à voir cette page"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "none": "Aucune nouvelle notification"
+  },
+  "help": {
+    "title": "Aide et Support"
+  },
+  "user": {
+    "defaultName": "Utilisateur",
+    "signOut": "Déconnexion"
+  },
+  "table": {
+    "addRow": "Ajouter une ligne",
+    "deleteRow": "Supprimer la ligne",
+    "addColumn": "Ajouter une colonne",
+    "deleteColumn": "Supprimer la colonne",
+    "insertTable": "Insérer un tableau"
+  },
+  "toolbar": {
+    "table": "Tableau",
+    "insertTable": "Insérer un tableau"
+  }
+}

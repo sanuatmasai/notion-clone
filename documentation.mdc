@@ -1,0 +1,514 @@
+# Product Requirements Document (PRD)
+## Notion Clone - 2 Day Development Sprint
+**Version:** 1.0  
+**Date:** May 31, 2025  
+**Development Tool:** Windsurf Coding Agent  
+**Timeline:** 48 Hours  
+**Status:** Development Ready
+
+---
+
+## 🎯 PROJECT OVERVIEW
+
+### Core Objective
+Build a functional Notion-style collaborative workspace with block-based editing using modern web technologies. Focus on MVP features that can be completed within 2 days.
+
+### Success Criteria
+- Working user authentication system
+- Basic workspace and page management
+- Functional block editor with multiple content types
+- Clean, responsive UI using TailwindCSS
+
+---
+
+## 👥 TARGET USERS
+- **Primary:** Knowledge workers, students, content creators
+- **Use Case:** Personal note-taking and content organization
+- **Scope:** Single-user focused for MVP (collaboration features in future versions)
+
+---
+
+## 🏗️ TECHNICAL ARCHITECTURE
+
+### Frontend Stack
+- **Framework:** React 18 with JavaScript
+- **Build Tool:** Vite 4
+- **Styling:** TailwindCSS 3.x
+- **Rich Text Editor:** Lexical
+- **State Management:** React Query + Context API
+- **Routing:** React Router 6
+- **HTTP Client:** Axios
+
+### Backend Stack
+- **Framework:** Spring Boot 3
+- **Language:** Java 17
+- **Database:** PostgreSQL 15
+- **Authentication:** Spring Security + JWT
+- **Email Service:** JavaMailSender
+- **API Documentation:** SpringDoc OpenAPI
+
+### Database
+- **Primary:** PostgreSQL 15
+- **Connection:** Spring Data JPA
+- **Schema:** Relational design with foreign key constraints
+
+---
+
+## 📋 CORE FEATURES
+
+### 1. USER AUTHENTICATION
+
+#### 1.1 User Registration
+**Endpoint:** `POST /api/auth/register`
+**Flow:**
+1. User provides email and password
+2. System generates 6-digit OTP
+3. OTP sent via email (10-minute expiry)
+4. Password requirements: minimum 8 characters
+
+**Database Table: users**
+```
+- id (UUID, Primary Key)
+- email (VARCHAR 255, Unique)
+- password_hash (VARCHAR 255)
+- otp_code (VARCHAR 6)
+- otp_expires_at (TIMESTAMP)
+- is_verified (BOOLEAN, default false)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+```
+
+#### 1.2 Email Verification
+**Endpoint:** `POST /api/auth/verify-otp`
+**Requirements:**
+- Validate OTP within 10-minute window
+- Return JWT token upon successful verification
+- JWT expiry: 7 days
+
+#### 1.3 User Login
+**Endpoint:** `POST /api/auth/login`
+**Requirements:**
+- Email/password validation
+- Return JWT token for authenticated users
+- Handle invalid credentials gracefully
+
+#### 1.4 Password Reset
+**Endpoints:** 
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
+**Flow:**
+1. User requests password reset with email
+2. System sends OTP if email exists
+3. User verifies OTP and sets new password
+
+### 2. WORKSPACE MANAGEMENT
+
+#### 2.1 Workspace Creation
+**Endpoint:** `POST /api/workspaces`
+**Business Rules:**
+- Free tier: Maximum 5 workspaces per user
+- Workspace name: 2-50 characters required
+- Description: Optional, max 200 characters
+- Creator automatically becomes owner
+
+**Database Table: workspaces**
+```
+- id (UUID, Primary Key)
+- name (VARCHAR 50)
+- description (TEXT)
+- owner_id (UUID, Foreign Key to users)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+```
+
+**Database Table: user_workspaces**
+```
+- id (UUID, Primary Key)
+- user_id (UUID, Foreign Key to users)
+- workspace_id (UUID, Foreign Key to workspaces)
+- role (VARCHAR 20, default 'member')
+- joined_at (TIMESTAMP)
+- UNIQUE constraint on (user_id, workspace_id)
+```
+
+#### 2.2 Workspace Operations
+**Endpoints:**
+- `GET /api/workspaces` - List user workspaces
+- `GET /api/workspaces/{id}` - Get workspace details
+- `PUT /api/workspaces/{id}` - Update workspace
+- `DELETE /api/workspaces/{id}` - Delete workspace
+
+### 3. PAGE SYSTEM
+
+#### 3.1 Page Management
+**Database Table: pages**
+```
+- id (UUID, Primary Key)
+- title (VARCHAR 200, default 'Untitled')
+- workspace_id (UUID, Foreign Key to workspaces)
+- parent_page_id (UUID, Foreign Key to pages, nullable)
+- created_by (UUID, Foreign Key to users)
+- is_published (BOOLEAN, default false)
+- page_order (INTEGER, default 0)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+```
+
+#### 3.2 Page Operations
+**Endpoints:**
+- `GET /api/workspaces/{workspaceId}/pages` - List workspace pages
+- `POST /api/workspaces/{workspaceId}/pages` - Create new page
+- `GET /api/pages/{id}` - Get page details
+- `PUT /api/pages/{id}` - Update page
+- `DELETE /api/pages/{id}` - Delete page
+
+### 4. BLOCK SYSTEM
+
+#### 4.1 Supported Block Types
+1. **Text Block** - Rich text with formatting (bold, italic, underline)
+2. **Heading Blocks** - H1, H2, H3
+3. **List Blocks** - Bullet lists, numbered lists, todo lists
+4. **Toggle Block** - Collapsible content sections
+5. **Callout Block** - Highlighted information boxes
+6. **Quote Block** - Styled quotations
+7. **Table Block** - Basic data tables
+8. **Page Block** - References to other pages
+
+#### 4.2 Block Data Structure
+**Database Table: blocks**
+```
+- id (UUID, Primary Key)
+- page_id (UUID, Foreign Key to pages)
+- block_type (VARCHAR 20)
+- content (JSONB)
+- block_order (INTEGER, default 0)
+- parent_block_id (UUID, Foreign Key to blocks, nullable)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+```
+
+#### 4.3 Block Operations
+**Endpoints:**
+- `GET /api/pages/{pageId}/blocks` - Get page blocks
+- `POST /api/pages/{pageId}/blocks` - Create new block
+- `PUT /api/blocks/{id}` - Update block content
+- `DELETE /api/blocks/{id}` - Delete block
+- `PATCH /api/blocks/{id}/reorder` - Reorder blocks
+
+### 5. LEXICAL EDITOR INTEGRATION
+
+#### 5.1 Editor Configuration
+**Required Lexical Plugins:**
+- RichTextPlugin
+- OnChangePlugin  
+- HistoryPlugin
+- HeadingNode
+- ListNode
+- QuoteNode
+- TableNode
+
+#### 5.2 Block Editor Features
+- Inline editing for all block types
+- Slash commands for block creation
+- Drag and drop for block reordering
+- Block selection and deletion
+- Real-time content saving
+
+---
+
+## 🎨 UI/UX SPECIFICATIONS
+
+### Design System (TailwindCSS 3.x)
+
+#### Color Palette
+- **Primary:** `blue-600` (#2563eb)
+- **Secondary:** `emerald-500` (#10b981)
+- **Gray Scale:** `gray-400` to `gray-800`
+- **Success:** `green-600` (#059669)
+- **Warning:** `yellow-600` (#d97706)
+- **Error:** `red-600` (#dc2626)
+
+#### Typography
+- **Font Family:** Inter (load from Google Fonts)
+- **Headings:** `font-bold`, `font-semibold`, `font-medium`
+- **Body Text:** `font-normal`, `font-medium`
+- **Code:** `font-mono`
+
+#### Responsive Design
+- **Mobile:** `sm:` (640px+)
+- **Tablet:** `md:` (768px+)
+- **Desktop:** `lg:` (1024px+)
+- **Large Desktop:** `xl:` (1280px+)
+
+### Key UI Components
+
+#### 1. Landing Page
+**Layout Sections:**
+- Hero section with value proposition
+- Features overview (3-4 key features)
+- Pricing information (free tier focus)
+- Sign up call-to-action
+
+#### 2. Authentication Pages
+- Clean, centered forms
+- Clear error messaging
+- Loading states for all actions
+- Responsive design
+
+#### 3. Main Application Layout
+**Sidebar Navigation:**
+- Workspace switcher dropdown
+- Page tree with expand/collapse
+- New page creation button
+- User profile menu
+
+**Main Content Area:**
+- Page title (editable inline)
+- Breadcrumb navigation
+- Block editor interface
+- Add block controls
+
+#### 4. Block Editor Interface
+- Hover states for block selection
+- Block type selector menu
+- Drag handles for reordering
+- Inline formatting toolbar
+
+---
+
+## 📡 API SPECIFICATIONS
+
+### Authentication Headers
+All protected endpoints require:
+```
+Authorization: Bearer {jwt_token}
+Content-Type: application/json
+```
+
+### Request/Response Format
+
+#### Standard Success Response
+```json
+{
+  "data": {...},
+  "message": "Operation successful",
+  "timestamp": "2025-05-31T12:00:00Z"
+}
+```
+
+#### Standard Error Response
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid input provided",
+    "details": {...}
+  },
+  "timestamp": "2025-05-31T12:00:00Z"
+}
+```
+
+### Key API Endpoints
+
+#### Authentication
+- `POST /api/auth/register`
+- `POST /api/auth/verify-otp`
+- `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
+
+#### Workspaces
+- `GET /api/workspaces`
+- `POST /api/workspaces`
+- `GET /api/workspaces/{id}`
+- `PUT /api/workspaces/{id}`
+- `DELETE /api/workspaces/{id}`
+
+#### Pages
+- `GET /api/workspaces/{workspaceId}/pages`
+- `POST /api/workspaces/{workspaceId}/pages`
+- `GET /api/pages/{id}`
+- `PUT /api/pages/{id}`
+- `DELETE /api/pages/{id}`
+
+#### Blocks
+- `GET /api/pages/{pageId}/blocks`
+- `POST /api/pages/{pageId}/blocks`
+- `PUT /api/blocks/{id}`
+- `DELETE /api/blocks/{id}`
+- `PATCH /api/blocks/{id}/reorder`
+
+---
+
+## 🛠️ DEVELOPMENT SETUP
+
+### Prerequisites
+- Node.js 18+
+- Java 17+
+- PostgreSQL 15+
+- Maven 3.8+
+
+### Environment Configuration
+
+#### Frontend (.env.local)
+```
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_APP_NAME=Notion Clone
+```
+
+#### Backend (application.yml)
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notion_clone
+    username: postgres
+    password: your_password
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@gmail.com
+    password: your-app-password
+
+jwt:
+  secret: your-jwt-secret-key
+  expiration: 604800000
+
+server:
+  port: 8080
+```
+
+### Database Setup
+1. Create PostgreSQL database: `notion_clone`
+2. Tables will be auto-created by Spring Boot JPA
+3. Ensure proper database indexes are created
+
+---
+
+## 📅 2-DAY DEVELOPMENT TIMELINE
+
+### Day 1 (24 Hours)
+**Hours 1-6: Project Setup & Authentication**
+- Initialize React + Vite frontend
+- Setup Spring Boot backend
+- Implement user registration and OTP verification
+- Create basic authentication pages
+
+**Hours 7-12: Database & Core APIs**
+- Setup PostgreSQL database
+- Implement workspace and page APIs
+- Create basic API error handling
+- Test authentication flow
+
+**Hours 13-18: Frontend Foundation**
+- Setup TailwindCSS styling
+- Create main application layout
+- Implement workspace and page management UI
+- Connect frontend to backend APIs
+
+**Hours 19-24: Block System Foundation**
+- Setup Lexical editor
+- Implement basic block types (text, heading, list)
+- Create block CRUD operations
+- Basic block editor UI
+
+### Day 2 (24 Hours)
+**Hours 25-30: Block Editor Enhancement**
+- Implement remaining block types
+- Add block reordering functionality
+- Improve editor UX (slash commands, formatting)
+- Block persistence and loading
+
+**Hours 31-36: UI/UX Polish**
+- Responsive design implementation
+- Loading states and error handling
+- Form validation and user feedback
+- Navigation improvements
+
+**Hours 37-42: Integration & Testing**
+- End-to-end feature testing
+- Bug fixes and edge cases
+- API error handling
+- Performance optimizations
+
+**Hours 43-48: Final Polish & Deployment Prep**
+- Landing page completion
+- Final UI tweaks
+- Documentation updates
+- Code cleanup and organization
+
+---
+
+## 📝 DEVELOPMENT NOTES FOR WINDSURF
+
+### Context Preservation
+- Keep all component state local to prevent confusion
+- Use consistent naming conventions throughout
+- Maintain clear separation between frontend and backend concerns
+
+### Code Organization
+- Frontend: Feature-based folder structure
+- Backend: Layer-based architecture (controller, service, repository)
+- Shared: Consistent API contract definitions
+
+### Key Implementation Points
+1. **JWT Handling:** Implement proper token refresh logic
+2. **Error Boundaries:** Add React error boundaries for stability
+3. **Loading States:** Ensure all async operations show loading indicators
+4. **Form Validation:** Client-side and server-side validation
+5. **Database Relationships:** Proper foreign key constraints
+6. **API Documentation:** Auto-generate with SpringDoc OpenAPI
+
+### Testing Strategy
+- Focus on core user flows (registration, login, page creation, block editing)
+- Manual testing for UI components
+- API testing with Postman or similar tools
+
+### Performance Considerations
+- Lazy load pages and blocks when needed
+- Implement proper React key props for list rendering
+- Use React.memo for expensive components
+- Database query optimization with proper indexes
+
+---
+
+## 🚀 FUTURE ENHANCEMENTS (Post-MVP)
+
+### Phase 2 Features
+- **AI Auto-Linking:** Suggest connections between pages
+- **Knowledge Graph:** Visual representation of page relationships  
+- **QA Assistant:** Natural language queries across workspace content
+- **Collaboration:** Real-time editing and comments
+- **Templates:** Pre-built page templates
+- **Advanced Blocks:** Code blocks, embeds, file uploads
+
+### Technical Improvements
+- **Real-time Sync:** WebSocket implementation
+- **Offline Support:** PWA capabilities
+- **Mobile App:** React Native implementation
+- **Advanced Search:** Full-text search with filters
+- **Export/Import:** Multiple format support
+
+---
+
+## ✅ ACCEPTANCE CRITERIA
+
+### Minimum Viable Product (MVP)
+1. ✅ User can register, verify email, and login
+2. ✅ User can create and manage workspaces (max 5)
+3. ✅ User can create, edit, and delete pages
+4. ✅ User can add and edit different block types
+5. ✅ Application is responsive and works on mobile
+6. ✅ All data persists correctly in database
+7. ✅ Basic error handling and loading states
+8. ✅ Clean, professional UI design
+
+### Success Metrics
+- Complete user registration and login flow
+- Create workspace with nested pages
+- Edit page content with multiple block types
+- Navigation between pages works smoothly
+- Application loads and responds quickly

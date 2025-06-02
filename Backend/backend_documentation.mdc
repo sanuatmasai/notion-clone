@@ -1,0 +1,924 @@
+# Backend Development Requirements
+## Notion Clone - 4-5 Hour Development Sprint
+**Version:** 1.1  
+**Date:** May 31, 2025  
+**Development Focus:** Backend API Only  
+**Timeline:** 4-5 Hours  
+**Priority:** MVP Core Features Only
+
+---
+
+## 🎯 BACKEND OVERVIEW
+
+### Core Objective
+Build a minimal but functional REST API backend for the Notion clone that supports user authentication with email OTP verification, workspace management, pages, and blocks. Focus on essential endpoints that enable frontend functionality within the tight timeline.
+
+### Success Criteria
+- Working JWT-based authentication system with email OTP verification
+- Email verification during signup and password reset via OTP
+- CRUD operations for workspaces, pages, and blocks
+- PostgreSQL database integration
+- Basic error handling and validation
+- API documentation via SpringDoc OpenAPI
+
+---
+
+## 🏗️ SIMPLIFIED TECHNICAL STACK
+
+### Backend Framework
+- **Framework:** Spring Boot 3.x
+- **Language:** Java 17
+- **Database:** PostgreSQL 15
+- **Authentication:** Spring Security + JWT
+- **Email Service:** Spring Boot Mail Starter (JavaMailSender)
+- **Documentation:** SpringDoc OpenAPI 3
+
+### Key Dependencies
+```xml
+<!-- Essential dependencies only -->
+- spring-boot-starter-web
+- spring-boot-starter-data-jpa
+- spring-boot-starter-security
+- spring-boot-starter-mail
+- postgresql
+- java-jwt
+- springdoc-openapi-starter-webmvc-ui
+```
+
+---
+
+## 📊 DATABASE DESIGN (ENHANCED)
+
+### Core Tables
+
+#### users table
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    is_verified BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### otp_tokens table
+```sql
+CREATE TABLE otp_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    otp_code VARCHAR(6) NOT NULL,
+    otp_type VARCHAR(20) NOT NULL, -- 'EMAIL_VERIFICATION' or 'PASSWORD_RESET'
+    expires_at TIMESTAMP NOT NULL,
+    is_used BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### workspaces table
+```sql
+CREATE TABLE workspaces (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50) NOT NULL,
+    description TEXT,
+    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### pages table
+```sql
+CREATE TABLE pages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(200) DEFAULT 'Untitled',
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    parent_page_id UUID REFERENCES pages(id) ON DELETE CASCADE,
+    created_by UUID NOT NULL REFERENCES users(id),
+    page_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### blocks table
+```sql
+CREATE TABLE blocks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    page_id UUID NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    block_type VARCHAR(20) NOT NULL,
+    content JSONB NOT NULL DEFAULT '{}',
+    block_order INTEGER DEFAULT 0,
+    parent_block_id UUID REFERENCES blocks(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Database Configuration Notes
+- Use `spring.jpa.hibernate.ddl-auto=create-drop` for development
+- Enable SQL logging: `spring.jpa.show-sql=true`
+- Foreign key constraints handle data integrity
+- OTP tokens expire after 10 minutes
+
+---
+
+## 🔐 AUTHENTICATION SYSTEM (WITH EMAIL OTP)
+
+### JWT Configuration
+- **Secret:** Use environment variable or application.properties
+- **Expiration:** 7 days (long for development ease)
+- **Claims:** user_id, email, issued_at, expires_at
+
+### Authentication Flow (Enhanced)
+1. **Registration:** 
+   - User provides email/password
+   - System creates unverified account
+   - Sends 6-digit OTP to email
+   - User verifies OTP to activate account
+2. **Login:** Only verified users can login
+3. **Password Reset:** 
+   - User requests reset with email
+   - System sends OTP to email
+   - User verifies OTP and sets new password
+
+### OTP System
+- **Code Generation:** 6-digit random numbers
+- **Expiration:** 10 minutes
+- **Types:** EMAIL_VERIFICATION, PASSWORD_RESET
+- **Validation:** One-time use, time-bound
+- **Email Template:** Simple HTML template
+
+### Security Configuration
+- Disable CSRF for API-only backend
+- Enable CORS for frontend integration
+- JWT filter for protected endpoints
+- Public endpoints: `/api/auth/**`, `/api/docs/**`
+
+---
+
+## 📡 API ENDPOINTS SPECIFICATION
+
+### Base URL Structure
+```
+Base URL: http://localhost:8080/api
+Documentation: http://localhost:8080/swagger-ui.html
+```
+
+### 1. AUTHENTICATION ENDPOINTS
+
+#### POST /api/auth/register
+**Purpose:** Create new user account and send verification OTP  
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+**Success Response (201):**
+```json
+{
+  "data": {
+    "user_id": "uuid",
+    "email": "user@example.com",
+    "is_verified": false
+  },
+  "message": "Registration successful. Please check your email for OTP verification."
+}
+```
+**Validation Rules:**
+- Email: Valid format, unique
+- Password: Minimum 8 characters
+
+#### POST /api/auth/verify-email
+**Purpose:** Verify email with OTP  
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "otp_code": "123456"
+}
+```
+**Success Response (200):**
+```json
+{
+  "data": {
+    "user_id": "uuid",
+    "email": "user@example.com",
+    "token": "jwt_token_here",
+    "is_verified": true
+  },
+  "message": "Email verified successfully"
+}
+```
+
+#### POST /api/auth/resend-otp
+**Purpose:** Resend OTP for verification  
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "otp_type": "EMAIL_VERIFICATION"
+}
+```
+**Success Response (200):**
+```json
+{
+  "message": "OTP sent successfully"
+}
+```
+
+#### POST /api/auth/login
+**Purpose:** Authenticate verified user  
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+**Success Response (200):**
+```json
+{
+  "data": {
+    "user_id": "uuid",
+    "email": "user@example.com",
+    "token": "jwt_token_here"
+  },
+  "message": "Login successful"
+}
+```
+**Error Response (401) for unverified users:**
+```json
+{
+  "error": {
+    "code": "EMAIL_NOT_VERIFIED",
+    "message": "Please verify your email before logging in"
+  }
+}
+```
+
+#### POST /api/auth/forgot-password
+**Purpose:** Request password reset OTP  
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+**Success Response (200):**
+```json
+{
+  "message": "Password reset OTP sent to your email"
+}
+```
+
+#### POST /api/auth/reset-password
+**Purpose:** Reset password with OTP  
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "otp_code": "123456",
+  "new_password": "newpassword123"
+}
+```
+**Success Response (200):**
+```json
+{
+  "message": "Password reset successful"
+}
+```
+
+### 2. WORKSPACE ENDPOINTS
+
+#### GET /api/workspaces
+**Purpose:** List user's workspaces  
+**Headers:** `Authorization: Bearer {token}`  
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "My Workspace",
+      "description": "Description here",
+      "owner_id": "uuid",
+      "created_at": "2025-05-31T12:00:00Z"
+    }
+  ]
+}
+```
+
+#### POST /api/workspaces
+**Purpose:** Create new workspace  
+**Headers:** `Authorization: Bearer {token}`  
+**Request Body:**
+```json
+{
+  "name": "New Workspace",
+  "description": "Optional description"
+}
+```
+**Validation Rules:**
+- Name: 2-50 characters, required
+- Description: Optional, max 200 characters
+- Limit: 5 workspaces per user
+
+#### GET /api/workspaces/{id}
+**Purpose:** Get workspace details  
+**Headers:** `Authorization: Bearer {token}`  
+
+#### PUT /api/workspaces/{id}
+**Purpose:** Update workspace  
+**Headers:** `Authorization: Bearer {token}`  
+**Authorization:** Only workspace owner
+
+#### DELETE /api/workspaces/{id}
+**Purpose:** Delete workspace  
+**Headers:** `Authorization: Bearer {token}`  
+**Authorization:** Only workspace owner
+
+### 3. PAGE ENDPOINTS
+
+#### GET /api/workspaces/{workspaceId}/pages
+**Purpose:** List workspace pages  
+**Headers:** `Authorization: Bearer {token}`  
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Page Title",
+      "workspace_id": "uuid",
+      "parent_page_id": null,
+      "page_order": 0,
+      "created_at": "2025-05-31T12:00:00Z"
+    }
+  ]
+}
+```
+
+#### POST /api/workspaces/{workspaceId}/pages
+**Purpose:** Create new page  
+**Request Body:**
+```json
+{
+  "title": "New Page",
+  "parent_page_id": null
+}
+```
+
+#### GET /api/pages/{id}
+**Purpose:** Get page details with blocks  
+**Success Response (200):**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "title": "Page Title",
+    "workspace_id": "uuid",
+    "blocks": [
+      {
+        "id": "uuid",
+        "block_type": "text",
+        "content": {"text": "Hello world"},
+        "block_order": 0
+      }
+    ]
+  }
+}
+```
+
+#### PUT /api/pages/{id}
+**Purpose:** Update page (title only)  
+
+#### DELETE /api/pages/{id}
+**Purpose:** Delete page and all blocks  
+
+### 4. BLOCK ENDPOINTS
+
+#### GET /api/pages/{pageId}/blocks
+**Purpose:** Get page blocks in order  
+**Success Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "page_id": "uuid",
+      "block_type": "heading",
+      "content": {
+        "level": 1,
+        "text": "Main Heading"
+      },
+      "block_order": 0,
+      "parent_block_id": null
+    }
+  ]
+}
+```
+
+#### POST /api/pages/{pageId}/blocks
+**Purpose:** Create new block  
+**Request Body:**
+```json
+{
+  "block_type": "text",
+  "content": {"text": "Block content"},
+  "block_order": 0,
+  "parent_block_id": null
+}
+```
+
+#### PUT /api/blocks/{id}
+**Purpose:** Update block content  
+**Request Body:**
+```json
+{
+  "content": {"text": "Updated content"},
+  "block_type": "text"
+}
+```
+
+#### DELETE /api/blocks/{id}
+**Purpose:** Delete block  
+
+#### PATCH /api/blocks/{id}/reorder
+**Purpose:** Update block order  
+**Request Body:**
+```json
+{
+  "new_order": 2
+}
+```
+
+---
+
+## 🔧 BLOCK TYPES SPECIFICATION
+
+### Supported Block Types
+1. **text** - Plain text content
+2. **heading** - H1, H2, H3 headings
+3. **list** - Bullet, numbered, todo lists
+4. **quote** - Quoted text
+5. **callout** - Highlighted info boxes
+
+### Block Content JSON Structure
+
+#### Text Block
+```json
+{
+  "text": "Plain text content here",
+  "formatting": {
+    "bold": false,
+    "italic": false,
+    "underline": false
+  }
+}
+```
+
+#### Heading Block
+```json
+{
+  "text": "Heading text",
+  "level": 1
+}
+```
+
+#### List Block
+```json
+{
+  "list_type": "bullet",
+  "items": [
+    {"text": "Item 1", "checked": false},
+    {"text": "Item 2", "checked": true}
+  ]
+}
+```
+
+#### Quote Block
+```json
+{
+  "text": "Quoted text here",
+  "author": "Optional author"
+}
+```
+
+#### Callout Block
+```json
+{
+  "text": "Important information",
+  "icon": "info",
+  "color": "blue"
+}
+```
+
+---
+
+## 🛠️ DEVELOPMENT CONFIGURATION
+
+### Application Properties (application.properties)
+```properties
+# Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/notion_clone_dev
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+
+# Server Configuration
+server.port=8080
+server.servlet.context-path=/api
+
+# JWT Configuration
+jwt.secret=notion-clone-jwt-secret-key-2025
+jwt.expiration=604800000
+
+# Mail Configuration
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your-email@gmail.com
+spring.mail.password=your-app-password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+
+# OTP Configuration
+otp.expiration.minutes=10
+otp.max.attempts=3
+
+# Logging Configuration
+logging.level.org.springframework.security=DEBUG
+logging.level.com.notionclone=DEBUG
+logging.level.org.springframework.mail=DEBUG
+```
+
+### CORS Configuration
+```properties
+# CORS Configuration
+cors.allowed-origins=http://localhost:3000,http://localhost:5173
+cors.allowed-methods=GET,POST,PUT,DELETE,PATCH
+cors.allowed-headers=*
+cors.allow-credentials=true
+```
+
+---
+
+## 📧 EMAIL SERVICE CONFIGURATION
+
+### Email Templates
+
+#### Email Verification Template
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Your Email - Notion Clone</title>
+</head>
+<body>
+    <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+        <h2>Welcome to Notion Clone!</h2>
+        <p>Thank you for registering. Please verify your email address using the OTP below:</p>
+        <div style="background-color: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #333; font-size: 32px; margin: 0;">{OTP_CODE}</h1>
+        </div>
+        <p>This OTP will expire in 10 minutes.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+    </div>
+</body>
+</html>
+```
+
+#### Password Reset Template
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Your Password - Notion Clone</title>
+</head>
+<body>
+    <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+        <h2>Password Reset Request</h2>
+        <p>You requested to reset your password. Use the OTP below to proceed:</p>
+        <div style="background-color: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #333; font-size: 32px; margin: 0;">{OTP_CODE}</h1>
+        </div>
+        <p>This OTP will expire in 10 minutes.</p>
+        <p>If you didn't request this, please ignore this email and your password will remain unchanged.</p>
+    </div>
+</body>
+</html>
+```
+
+### Email Service Implementation
+- **OTP Generation:** 6-digit random numbers (100000-999999)
+- **Expiration:** 10 minutes from generation
+- **Rate Limiting:** Max 3 OTP requests per hour per email
+- **Template Engine:** Simple string replacement for {OTP_CODE}
+
+---
+
+## 📝 DEVELOPMENT APPROACH (4-5 HOURS)
+
+### Hour 1: Project Setup & Configuration
+**Tasks:**
+- Initialize Spring Boot project with dependencies
+- Configure PostgreSQL database connection
+- Setup basic project structure (controller, service, repository layers)
+- Configure CORS, security, and email service
+- Test database connection and email sending
+
+**Key Files:**
+- `pom.xml` - Dependencies including mail starter
+- `application.properties` - All configuration
+- `SecurityConfig.java` - Security setup
+- `EmailService.java` - Email sending service
+- Database connection and email test
+
+### Hour 2: User Authentication & OTP System
+**Tasks:**
+- Create User and OtpToken entities
+- Implement JWT utility class
+- Build AuthController with all auth endpoints
+- Setup password encoding with BCrypt
+- Implement OTP generation and validation
+- Test complete registration/verification flow
+
+**Key Components:**
+- `User.java`, `OtpToken.java` - Entities
+- `UserRepository.java`, `OtpTokenRepository.java` - Data access
+- `AuthController.java` - All auth endpoints
+- `JwtUtil.java` - Token handling
+- `AuthService.java` - Business logic with OTP
+- `EmailService.java` - Email sending
+
+### Hour 3: Workspace & Page Management
+**Tasks:**
+- Create Workspace and Page entities
+- Implement workspace CRUD operations
+- Build page management endpoints
+- Setup proper authorization checks (only verified users)
+- Test workspace-page relationships
+
+**Key Components:**
+- `Workspace.java`, `Page.java` - Entities
+- `WorkspaceController.java`, `PageController.java` - Endpoints
+- Service layer for business logic
+- Repository layer for data access
+- Authorization checks for verified users
+
+### Hour 4: Block System Implementation
+**Tasks:**
+- Create Block entity with JSONB content
+- Implement block CRUD operations
+- Build block reordering functionality
+- Test all block types with sample data
+- Validate JSON content structure
+
+**Key Components:**
+- `Block.java` - Entity with JSONB
+- `BlockController.java` - Endpoints
+- `BlockService.java` - Business logic
+- Block content validation
+
+### Hour 5: Testing & Documentation
+**Tasks:**
+- Configure SpringDoc OpenAPI
+- Test all endpoints including email flows
+- Test OTP expiration and validation
+- Fix critical bugs and edge cases
+- Add basic error handling
+- Generate API documentation
+
+**Key Activities:**
+- API documentation at `/swagger-ui.html`
+- End-to-end testing of user flows with email
+- OTP expiration testing
+- Error response standardization
+- Final configuration adjustments
+
+---
+
+## 🚨 ENHANCED REQUIREMENTS
+
+### What to INCLUDE (Essential)
+- **Email OTP authentication** - Registration verification and password reset
+- **JWT authentication** - For verified users only
+- **Email service integration** - JavaMailSender with HTML templates
+- **CRUD operations** - All main entities
+- **Proper relationships** - Foreign keys and cascading
+- **JSON content storage** - For block flexibility
+- **CORS configuration** - For frontend integration
+- **API documentation** - Auto-generated with SpringDoc
+- **OTP validation** - Time-bound, one-time use
+- **Email templates** - Professional HTML emails
+
+### What to SKIP for MVP
+- **Advanced email templates** - Simple HTML is sufficient
+- **Rate limiting** - Basic attempt limiting only
+- **Complex validation** - Basic validation only
+- **Advanced error handling** - Standard Spring Boot errors
+- **Advanced security** - Basic JWT is sufficient
+- **Caching** - Direct database queries
+- **Audit logging** - Not required
+- **Advanced search** - Simple queries only
+
+---
+
+## 🧪 TESTING STRATEGY
+
+### Manual Testing Checklist
+1. **Authentication Flow with Email**
+   - Register new user → User created, OTP sent to email
+   - Verify email with correct OTP → User verified, JWT returned
+   - Verify email with wrong OTP → Error message
+   - Verify email with expired OTP → Error message
+   - Login with unverified account → Error message
+   - Login with verified account → Success with JWT
+   - Request password reset → OTP sent to email
+   - Reset password with OTP → Success, can login with new password
+
+2. **Email Service**
+   - Check email delivery for registration
+   - Check email delivery for password reset
+   - Verify OTP format (6 digits)
+   - Check email templates render correctly
+
+3. **Workspace Management**
+   - Create workspace (only verified users) → Success
+   - List user workspaces → Returns only user's workspaces
+   - Update workspace name → Success
+   - Delete workspace → Cascades to pages and blocks
+
+4. **Page Operations**
+   - Create page in workspace → Success
+   - List workspace pages → Ordered properly
+   - Update page title → Success
+   - Create nested pages → Parent-child relationship works
+   - Delete page → Cascades to child pages and blocks
+
+5. **Block System**
+   - Create different block types → All types work
+   - Update block content → JSON content updates
+   - Reorder blocks → Order changes persist
+   - Delete blocks → Removed from database
+
+### Test Data Setup
+Create sample data for each entity to verify relationships work properly.
+
+---
+
+## 📋 ERROR HANDLING SPECIFICATION
+
+### Standard Error Response Format
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid input provided",
+    "details": {
+      "field": "email",
+      "issue": "Email already exists"
+    }
+  },
+  "timestamp": "2025-05-31T12:00:00Z",
+  "path": "/api/auth/register"
+}
+```
+
+### Common HTTP Status Codes
+- **200 OK** - Successful GET, PUT, PATCH
+- **201 Created** - Successful POST
+- **204 No Content** - Successful DELETE
+- **400 Bad Request** - Validation errors, invalid OTP
+- **401 Unauthorized** - Missing/invalid JWT, unverified user
+- **403 Forbidden** - Access denied
+- **404 Not Found** - Resource not found
+- **409 Conflict** - Duplicate resource
+- **429 Too Many Requests** - OTP rate limit exceeded
+- **500 Internal Server Error** - Server errors
+
+### OTP-Specific Error Codes
+- **OTP_EXPIRED** - OTP has expired
+- **OTP_INVALID** - OTP code is incorrect
+- **OTP_ALREADY_USED** - OTP has already been used
+- **OTP_MAX_ATTEMPTS** - Too many OTP attempts
+- **EMAIL_NOT_VERIFIED** - User must verify email first
+
+---
+
+## 🚀 API DOCUMENTATION
+
+### SpringDoc OpenAPI Configuration
+- **Swagger UI:** `http://localhost:8080/swagger-ui.html`
+- **OpenAPI JSON:** `http://localhost:8080/v3/api-docs`
+- **Security:** JWT Bearer token authentication in Swagger UI
+
+### Documentation Features
+- All endpoints documented with examples
+- Request/response schemas defined
+- Authentication requirements specified
+- Error response examples included
+- OTP flow documentation
+
+---
+
+## ✅ ACCEPTANCE CRITERIA
+
+### Core Backend Functionality
+1. ✅ User registration with email OTP verification
+2. ✅ Email verification system with 6-digit OTP
+3. ✅ Password reset via email OTP
+4. ✅ JWT authentication for verified users only
+5. ✅ CRUD operations for workspaces (verified user ownership)
+6. ✅ CRUD operations for pages (workspace association)
+7. ✅ CRUD operations for blocks (page association)
+8. ✅ Proper database relationships and cascading
+9. ✅ Email service integration with HTML templates
+10. ✅ CORS configuration for frontend integration
+11. ✅ API documentation accessible via Swagger UI
+12. ✅ OTP validation and expiration handling
+
+### Success Validation
+- All endpoints return proper JSON responses
+- Email OTP system works end-to-end
+- Authentication requires email verification
+- Password reset via OTP functions correctly
+- Database relationships maintain data integrity
+- Frontend can successfully integrate with all endpoints
+- API documentation is complete and accurate
+- Email templates render properly
+
+### Performance Expectations
+- Response times under 500ms for basic operations
+- Email delivery within 30 seconds
+- Database queries optimized with proper relationships
+- No memory leaks during development testing
+- Stable operation for typical development usage
+
+---
+
+## 📊 FINAL DELIVERABLES
+
+### Code Structure
+```
+src/main/java/com/notionclone/
+├── config/
+│   ├── SecurityConfig.java
+│   ├── CorsConfig.java
+│   └── OpenApiConfig.java
+├── controller/
+│   ├── AuthController.java
+│   ├── WorkspaceController.java
+│   ├── PageController.java
+│   └── BlockController.java
+├── entity/
+│   ├── User.java
+│   ├── OtpToken.java
+│   ├── Workspace.java
+│   ├── Page.java
+│   └── Block.java
+├── repository/
+│   ├── UserRepository.java
+│   ├── OtpTokenRepository.java
+│   ├── WorkspaceRepository.java
+│   ├── PageRepository.java
+│   └── BlockRepository.java
+├── service/
+│   ├── AuthService.java
+│   ├── EmailService.java
+│   ├── WorkspaceService.java
+│   ├── PageService.java
+│   └── BlockService.java
+├── dto/
+│   └── [Request/Response DTOs]
+├── util/
+│   ├── JwtUtil.java
+│   └── OtpUtil.java
+└── NotionCloneApplication.java
+```
+
+### Email Templates
+```
+src/main/resources/templates/
+├── email-verification.html
+└── password-reset.html
+```
+
+### Documentation Files
+- `README.md` - Setup and running instructions
+- `API_DOCUMENTATION.md` - Endpoint details
+- `DATABASE_SCHEMA.md` - Table structures
+- `EMAIL_SETUP.md` - Email configuration guide
+- Swagger UI for interactive API testing
+
+This enhanced backend PRD includes comprehensive email OTP functionality while maintaining the 4-5 hour development timeline by focusing on essential features and using application.properties for configuration.

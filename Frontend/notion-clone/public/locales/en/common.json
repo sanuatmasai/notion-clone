@@ -1,0 +1,72 @@
+{
+  "appName": "Notion Clone",
+  "pages": {
+    "title": "Pages",
+    "newPage": "New Page",
+    "searchPlaceholder": "Search pages...",
+    "noPagesFound": "No pages found",
+    "untitled": "Untitled",
+    "gettingStarted": "Getting Started",
+    "projectPlan": "Project Plan",
+    "meetingNotes": "Meeting Notes"
+  },
+  "sidebar": {
+    "home": "Home",
+    "templates": "Templates",
+    "settings": "Settings",
+    "recentPages": "Recent Pages",
+    "workspaces": "Workspaces",
+    "favorites": "Favorites",
+    "private": "Private",
+    "shared": "Shared"
+  },
+  "settings": {
+    "title": "Settings",
+    "account": "Account",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "language": "Language",
+    "signOut": "Sign Out",
+    "yourProfile": "Your Profile"
+  },
+  "languages": {
+    "en": "English",
+    "es": "Español",
+    "fr": "Français"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "retry": "Try Again"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "generic": "An unexpected error occurred. Please try again.",
+    "notFound": "Page not found",
+    "unauthorized": "You don't have permission to view this page"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "none": "No new notifications"
+  },
+  "help": {
+    "title": "Help & Support"
+  },
+  "user": {
+    "defaultName": "User",
+    "signOut": "Sign out"
+  },
+  "table": {
+    "addRow": "Add row",
+    "deleteRow": "Delete row",
+    "addColumn": "Add column",
+    "deleteColumn": "Delete column",
+    "insertTable": "Insert table"
+  },
+  "toolbar": {
+    "table": "Table",
+    "insertTable": "Insert table"
+  }
+}
