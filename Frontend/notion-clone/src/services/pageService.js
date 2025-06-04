@@ -22,6 +22,15 @@ export const pageService = {
     });
     return response.data;
   },
+  chatUploadPage: async (sourcePageId) => {
+    const response = await api.post(`/chat/upload-page?sourceId=${sourcePageId}`);
+    return response.data;
+  },
+
+  chatPage: async (req) => {
+    const response = await api.post(`/chat/page`,req);
+    return response.data;
+  },
 
   updatePage: async (pageId, pageData) => {
     const response = await api.put(`/pages/${pageId}`, pageData);
@@ -35,6 +44,11 @@ export const pageService = {
 
   toggleFavorite: async (pageId) => {
     const response = await api.post(`/pages/${pageId}/favorite`);
+    return response.data;
+  },
+
+  getPageNameSuggestions: async (pageId) => {
+    const response = await api.post(`/chat/page-name-suggestion`, { sourceId: pageId });
     return response.data;
   },
 

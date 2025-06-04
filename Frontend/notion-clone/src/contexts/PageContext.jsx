@@ -22,7 +22,7 @@ export function PageProvider({ children }) {
       setPages(data);
     } catch (err) {
       setError(err.message);
-      toast.error('Failed to load pages');
+      toast.error(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -36,7 +36,7 @@ export function PageProvider({ children }) {
       return data;
     } catch (err) {
       setError(err.message);
-      toast.error('Failed to load page');
+      toast.error(err.message);
       throw err;
     } finally {
       setIsLoading(false);
@@ -53,7 +53,18 @@ export function PageProvider({ children }) {
       await loadPages(pageData.parentId);
       return newPage;
     } catch (err) {
-      toast.error('Failed to create page');
+      toast.error(err.message);
+      throw err;
+    }
+  };
+
+  const chatPage = async (req) => {
+    try {
+      const newPage = await pageService.chatPage(req);
+     
+      return newPage;
+    } catch (err) {
+      toast.error(err.message);
       throw err;
     }
   };
@@ -65,7 +76,18 @@ export function PageProvider({ children }) {
       await loadPages(updates.parentId);
       return updatedPage;
     } catch (err) {
-      toast.error('Failed to update page');
+      toast.error(err.message);
+      throw err;
+    }
+  };
+
+  const chatUploadPage = async (sourcePageId) => {
+    try {
+      const newPage = await pageService.chatUploadPage(sourcePageId);
+     
+      return newPage;
+    } catch (err) {
+      toast.error(err.message);
       throw err;
     }
   };
@@ -76,7 +98,7 @@ export function PageProvider({ children }) {
       await loadPages(moveData.newParentId);
       return updatedPage;
     } catch (err) {
-      toast.error('Failed to move page');
+      toast.error(err.message);
       throw err;
     }
   };
@@ -97,7 +119,7 @@ export function PageProvider({ children }) {
       
       return updatedPage.favorite;
     } catch (err) {
-      toast.error('Failed to update favorites');
+      toast.error(err.message);
       throw err;
     }
   };
@@ -108,7 +130,7 @@ export function PageProvider({ children }) {
       await loadPages(parentId);
       toast.success('Page moved to trash');
     } catch (err) {
-      toast.error('Failed to delete page');
+      toast.error(err.message);
       throw err;
     }
   };
@@ -118,7 +140,7 @@ export function PageProvider({ children }) {
       const data = await pageService.getFavorites();
       setFavorites(data);
     } catch (err) {
-      toast.error('Failed to load favorites');
+      toast.error(err.message);
     }
   }, []);
 
@@ -143,7 +165,9 @@ export function PageProvider({ children }) {
         updatePage,
         movePage,
         toggleFavorite,
-        deletePage
+        deletePage,
+        chatUploadPage,
+        chatPage
       }}
     >
       {children}

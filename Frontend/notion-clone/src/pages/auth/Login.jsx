@@ -66,8 +66,8 @@ const Login = () => {
     
     try {
       setIsLoading(true);
+      // toast.success('Signed in successfully!');
       await login(formData.email, formData.password);
-      toast.success('Signed in successfully!');
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Login error:', error);

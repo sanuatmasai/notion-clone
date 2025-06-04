@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
       // Set default authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      toast.success(message || 'Signed in successfully!');
+      // toast.success(message || 'Signed in successfully!');
       return user;
     } catch (error) {
       console.error('Login error:', error);
@@ -79,18 +79,18 @@ export function AuthProvider({ children }) {
 
   // Sign out the current user
   const logout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+    // try {
+    //   await api.post('/auth/logout');
+    // } catch (error) {
+    //   console.error('Logout error:', error);
+    // } finally {
       // Clear user data and token
       removeAuthToken();
       delete api.defaults.headers.common['Authorization'];
       setCurrentUser(null);
       toast.success('Signed out successfully!');
       navigate('/login');
-    }
+    // }
   };
 
   // Send password reset email
@@ -174,24 +174,6 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Add refresh token logic
-  useEffect(() => {
-    const refreshToken = async () => {
-      try {
-        const response = await api.post('/auth/refresh-token');
-        const { token } = response.data;
-        setAuthToken(token);
-      } catch (error) {
-        console.error('Failed to refresh token:', error);
-        logout();
-      }
-    };
-    
-    // Set up token refresh interval (e.g., every 15 minutes)
-    const interval = setInterval(refreshToken, 15 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [logout]);
 
   // Update user data in context
   const updateUser = (userData) => {

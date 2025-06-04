@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
-import { FiHome, FiLayers, FiSettings, FiPlus } from 'react-icons/fi';
+import { FiHome, FiLayers, FiSettings, FiPlus, FiMessageSquare } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import WorkspaceList from './workspace/WorkspaceList';
@@ -26,7 +26,7 @@ const Sidebar = ({ onNavigate }) => {
     try {
       await logout();
       navigate('/login');
-      toast.success('Successfully logged out');
+      // toast.success('Successfully logged out');
     } catch (error) {
       console.error('Failed to log out', error);
       toast.error('Failed to log out');
@@ -38,6 +38,11 @@ const Sidebar = ({ onNavigate }) => {
       name: t('sidebar.home', 'Home'), 
       path: '/dashboard', 
       icon: <FiHome className="w-5 h-5" /> 
+    },
+    { 
+      name: 'AI Assistant', 
+      path: '/ai-assistant', 
+      icon: <FiMessageSquare className="w-5 h-5" /> 
     },
     { 
       name: t('sidebar.templates', 'Templates'), 

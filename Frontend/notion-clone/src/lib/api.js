@@ -23,7 +23,7 @@ api.interceptors.request.use(
     const isAuthRequest = [
       '/auth/login', 
       '/auth/register', 
-      '/auth/refresh-token',
+      // '/auth/refresh-token',
       '/users/login',
       '/users/register'
     ].some(path => config.url.endsWith(path));
@@ -52,159 +52,58 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for handling errors
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // If the error is 401 and we haven't tried to refresh the token yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        // Try to refresh the token
-        const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {}, {
-          withCredentials: true,
-        });
-        
-        const { token } = response.data;
-        if (token) {
-          // Update the token in storage and retry the original request
-          localStorage.setItem('token', token);
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        // If refresh token fails, log out the user
-        console.error('Failed to refresh token:', refreshError);
-        if (window.location.pathname !== '/login') {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-        }
-        return Promise.reject(refreshError);
-      }
-    }
-    
-    // Handle other errors
-    if (error.response) {
-      // Server responded with a status code outside 2xx
-      const { status, data } = error.response;
-      
-      if (status === 403) {
-        toast.error('You do not have permission to perform this action');
-      } else if (status === 404) {
-        toast.error('The requested resource was not found');
-      } else if (status >= 500) {
-        toast.error('A server error occurred. Please try again later.');
-      } else if (data?.message) {
-        toast.error(data.message);
-      } else {
-        toast.error('An unexpected error occurred');
-      }
-    } else if (error.request) {
-      // Request was made but no response was received
-      toast.error('No response from server. Please check your connection.');
-    } else {
-      // Something happened in setting up the request
-      console.error('Request error:', error.message);
-      toast.error('Error setting up the request');
-    }
-    
-    return Promise.reject(error);
-  }
-);
 
 // Response interceptor to handle errors globally
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    
-    // Handle token expiration (401) - try to refresh token
-    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh-token') {
-      originalRequest._retry = true;
-      
-      try {
-        // Try to refresh the token
-        const refreshResponse = await axios.post(`${BASE_URL}/auth/refresh-token`, {}, {
-          withCredentials: true, // Important for httpOnly cookies
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          }
-        });
-        
-        const { token } = refreshResponse.data;
-        localStorage.setItem('token', token);
-        
-        // Update the Authorization header
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-        
-        // Retry the original request
-        return api(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, redirect to login
-        localStorage.removeItem('token');
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
-        return Promise.reject(refreshError);
-      }
-    }
     
     // Handle other errors
     if (error.response) {
       const { status, data } = error.response;
       const errorMessage = data?.message || 'An error occurred';
+      toast.error(errorMessage);
       
       // Show appropriate error messages based on status code
-      switch (status) {
-        case 400:
-          toast.error(errorMessage || 'Invalid request');
-          break;
-        case 401:
-          // Only show message if not already redirecting
-          if (window.location.pathname !== '/login') {
-            toast.error('Your session has expired. Please log in again.');
-          }
-          break;
-        case 403:
-          toast.error(errorMessage || 'You do not have permission to perform this action');
-          break;
-        case 404:
-          toast.error(errorMessage || 'Resource not found');
-          break;
-        case 422:
-          // Handle validation errors
-          if (data?.errors) {
-            Object.values(data.errors).forEach(err => toast.error(err));
-          } else {
-            toast.error(errorMessage || 'Validation failed');
-          }
-          break;
-        case 429:
-          toast.error('Too many requests. Please try again later.');
-          break;
-        case 500:
-          toast.error('Server error. Please try again later.');
-          console.error('Server Error:', data);
-          break;
-        default:
-          toast.error(errorMessage || 'An unexpected error occurred');
-      }
-    } else if (error.request) {
-      // The request was made but no response was received
-      toast.error('No response from server. Please check your connection.');
-      console.error('Request Error:', error.request);
-    } else {
-      // Something happened in setting up the request
-      console.error('Error:', error.message);
-      toast.error('An error occurred while setting up the request');
-    }
+    //   switch (status) {
+    //     case 400:
+    //       toast.error(errorMessage || 'Invalid request');
+    //       break;
+    //     case 401:
+    //       // Only show message if not already redirecting
+    //       if (window.location.pathname !== '/login') {
+    //         toast.error('Your session has expired. Please log in again.');
+    //       }
+    //       break;
+    //     case 403:
+    //       toast.error(errorMessage || 'You do not have permission to perform this action');
+    //       break;
+    //     case 404:
+    //       toast.error(errorMessage || 'Resource not found');
+    //       break;
+    //     case 422:
+    //       // Handle validation errors
+    //       if (data?.errors) {
+    //         Object.values(data.errors).forEach(err => toast.error(err));
+    //       } else {
+    //         toast.error(errorMessage || 'Validation failed');
+    //       }
+    //       break;
+    //     case 429:
+    //       toast.error('Too many requests. Please try again later.');
+    //       break;
+    //     case 500:
+    //       toast.error('Something went wrong..');
+    //       console.error('Server Error:', data);
+    //       break;
+    //     default:
+    //       toast.error(errorMessage || 'An unexpected error occurred');
+    //   }
+    // } 
     
     return Promise.reject(error);
   }
+}
 );
 
 // Helper function to handle file uploads

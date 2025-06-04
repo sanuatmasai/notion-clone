@@ -35,6 +35,7 @@ import { PageProvider } from './contexts/PageContext';
 import { ModalProvider } from './contexts/ModalContext';
 import PageList from './components/pages/PageList';
 import PageEditor from './components/pages/PageEditor';
+import AIAssistant from './pages/AIAssistant';
 
 // Initialize QueryClient with default options
 const queryClient = new QueryClient({
@@ -254,6 +255,7 @@ function App() {
                   }>
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/ai-assistant" element={<AIAssistant />} />
                     <Route path="/templates" element={<Templates />} />
                     <Route path="/pricing" element={<Pricing />} />
                     <Route 
