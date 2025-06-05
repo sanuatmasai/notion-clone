@@ -53,7 +53,7 @@ export default function Profile() {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        'http://localhost:8080/api/users/profile',
+        'https://api.truexplainer.com/api/users/profile',
         {
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim()

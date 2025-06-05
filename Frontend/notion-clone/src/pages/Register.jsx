@@ -28,7 +28,7 @@ const Register = () => {
 
     try {
       // Simulating the original API call
-      const response = await fetch('http://localhost:8080/api/users/register/request-otp', {
+      const response = await fetch('https://api.truexplainer.com/api/users/register/request-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

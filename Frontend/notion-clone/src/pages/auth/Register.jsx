@@ -85,7 +85,7 @@ export default function Register() {
     
     try {
       const response = await axios.post(
-        'http://localhost:8080/api/users/register',
+        'https://api.truexplainer.com/api/users/register',
         {
           firstName: formData.firstName,
           lastName: formData.lastName,

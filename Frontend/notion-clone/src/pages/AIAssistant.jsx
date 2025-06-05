@@ -35,7 +35,7 @@ const AIAssistant = () => {
         }
         
         const response = await axios.post(
-          'http://localhost:8080/api/chat/upload',
+          'https://api.truexplainer.com/api/chat/upload',
           {},
           {
             headers: {
@@ -145,6 +145,65 @@ const AIAssistant = () => {
     }
   };
 
+  const handleAskWeb = async (input) => {
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        withCredentials: true
+      };
+      
+      const response = await api.post(
+        "/chat/advanced",
+        {
+          question: input
+        },
+        config
+      );
+
+      // Handle different response formats
+      let responseText = 'I\'m not sure how to respond to that.';
+      
+      if (typeof response.data === 'string') {
+        responseText = response.data;
+      } else if (response.data.answer) {
+        responseText = response.data.answer;
+      } else if (response.data.message) {
+        responseText = response.data.message;
+      } else if (response.data.data) {
+        responseText = response.data.data;
+      }
+      
+      // Clean up the response text
+      responseText = responseText
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') // Bold
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>') // Italic
+        .replace(/\n/g, '<br>') // New lines
+        .replace(/^\s*[-*]\s*/gm, '• '); // List items
+      
+      const aiResponse = {
+        id: Date.now() + 1,
+        text: responseText,
+        isUser: false,
+        timestamp: new Date(),
+        isFormatted: true
+      };
+
+      setMessages(prev => [...prev, aiResponse]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Parse markdown to HTML
   const renderMarkdown = (text) => {
     return { __html: marked(text) };
@@ -208,7 +267,7 @@ const AIAssistant = () => {
             <p className="text-gray-500 max-w-md">Ask me anything about your workspaces, documents, or tasks.</p>
           </div>
         ) : (
-          messages.map((message) => (
+          messages.map((message, i) => (
             <div
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} group`}
@@ -233,9 +292,26 @@ const AIAssistant = () => {
                     dangerouslySetInnerHTML={renderMarkdown(message.text)}
                   />
                 )}
+                <div className='flex items-center justify-between'>
                 <p className={`text-xs mt-2 ${message.isUser ? 'text-blue-100' : 'text-gray-400'} opacity-80`}>
                   {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
+                {
+                  i !== 0 && !message.isUser && (
+                    <button
+                    onClick={() => {
+                      handleAskWeb(messages[i-1].text)
+                    }}
+                    className=""
+                  >
+                    Ask Web
+                  </button>
+                  )
+                  
+                }
+                
+                </div>
+                
               </div>
             </div>
           ))
