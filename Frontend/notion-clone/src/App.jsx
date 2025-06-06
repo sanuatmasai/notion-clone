@@ -36,6 +36,7 @@ import { ModalProvider } from './contexts/ModalContext';
 import PageList from './components/pages/PageList';
 import PageEditor from './components/pages/PageEditor';
 import AIAssistant from './pages/AIAssistant';
+import KnowledgeGraph from './components/KnowledgeGraph';
 
 // Initialize QueryClient with default options
 const queryClient = new QueryClient({
@@ -257,6 +258,7 @@ function App() {
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/ai-assistant" element={<AIAssistant />} />
                     <Route path="/templates" element={<Templates />} />
+                    <Route path="/knowledge-graph/:workspaceId" element={<KnowledgeGraph />} />
                     <Route path="/pricing" element={<Pricing />} />
                     <Route 
                       path="/settings" 

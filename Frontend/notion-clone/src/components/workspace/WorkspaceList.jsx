@@ -142,6 +142,16 @@ const WorkspaceList = ({ onOpenModal }) => {
                 >
                   Pages
                 </Link>
+                <Link
+                  to={`/knowledge-graph/${workspace.id}`}
+                  className={`block px-3 py-1.5 text-sm rounded-md ${
+                    location.pathname.startsWith(`/knowledge-graph/${workspace.id}`)
+                      ? 'bg-blue-50 text-blue-600 font-medium'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Knowledge Graph
+                </Link>
               </div>
             )}
           </div>
